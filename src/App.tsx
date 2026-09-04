@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, ClipboardCheck, History, Users, FileText, GitCompare,
-  Settings, Plus, X, Printer, Trash2, Search, Check, AlertCircle, ChevronRight,
-  UserCircle2, Calendar, Filter, RotateCcw, Download
+  Settings, Plus, X, Printer, Trash2, Search, Check, AlertCircle,
+  UserCircle2, RotateCcw, Download
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -190,7 +190,7 @@ function EmptyState({ icon: Icon, title, sub }: { icon: any; title: string; sub?
 
 function Select({ value, onChange, options, placeholder, style }: any) {
   return (
-    <select className="input select" value={value} onChange={(e) => onChange(e.target.value)} style={style}>
+    <select className="input select" value={value || ""} onChange={(e) => onChange(e.target.value)} style={style}>
       <option value="">{placeholder}</option>
       {options.map((o: any) => (
         <option key={o.value} value={o.value}>
@@ -600,7 +600,7 @@ function NovaAvaliacao({ cadastros, avaliacoes, persistAvaliacoes, showToast }: 
               <Field label="Professor" required>
                 <Select
                   value={form.professorId}
-                  onChange={selecionarProfessor}
+                  onChange={(v: string) => selecionarProfessor(v)}
                   placeholder="Selecione o professor"
                   options={cadastros.professores.filter((p: any) => p.status !== "Inativo").map((p: any) => ({ value: p.id, label: p.nome }))}
                 />
@@ -1208,7 +1208,7 @@ function RelatorioAnual({ cadastros, avaliacoes }: any) {
         </div>
       )}
 
-      {prof && relatorio && relatorio.lista.length > 0 && (
+      {prof && relatorio && relatorio.lista && relatorio.lista.length > 0 && relatorio.melhor && relatorio.menor && (
         <div className="relatorio-folha card">
           <div className="relatorio-cabecalho">
             <div>
@@ -1216,13 +1216,13 @@ function RelatorioAnual({ cadastros, avaliacoes }: any) {
               <h2>{prof.nome}</h2>
               <p className="page-sub">{prof.modalidade}</p>
             </div>
-            <Badge classificacao={relatorio.classificacao} />
+            <Badge classificacao={relatorio.classificacao!} />
           </div>
 
           <div className="kpi-grid">
             <KpiCard label="Avaliações no ano" value={relatorio.qtd} />
-            <KpiCard label="Média anual" value={mediaFmt(relatorio.mediaAnual)} />
-            <KpiCard label="Percentual anual" value={pctFmt(relatorio.percentualAnual)} />
+            <KpiCard label="Média anual" value={mediaFmt(relatorio.mediaAnual!)} />
+            <KpiCard label="Percentual anual" value={pctFmt(relatorio.percentualAnual!)} />
             <KpiCard label="Classificação final" value={relatorio.classificacao} />
           </div>
 
@@ -1231,7 +1231,7 @@ function RelatorioAnual({ cadastros, avaliacoes }: any) {
             {AREAS.map((a) => (
               <div key={a.id} className="area-media-card">
                 <span>{a.nome}</span>
-                <strong style={{ color: corClassificacao(classify(relatorio.areaMedia[a.id])) }}>{mediaFmt(relatorio.areaMedia[a.id])}</strong>
+                <strong style={{ color: corClassificacao(classify(relatorio.areaMedia![a.id])) }}>{mediaFmt(relatorio.areaMedia![a.id])}</strong>
               </div>
             ))}
           </div>
@@ -1264,7 +1264,7 @@ function RelatorioAnual({ cadastros, avaliacoes }: any) {
             <div>
               <h3 className="card-title">Pontos fortes identificados</h3>
               <ul className="pontos-lista pontos-fortes">
-                {relatorio.pontosFortes.map((p: any) => (
+                {relatorio.pontosFortes!.map((p: any) => (
                   <li key={p.id}>
                     {p.nome} <strong>{mediaFmt(p.media)}</strong>
                   </li>
@@ -1274,7 +1274,7 @@ function RelatorioAnual({ cadastros, avaliacoes }: any) {
             <div>
               <h3 className="card-title">Pontos de atenção</h3>
               <ul className="pontos-lista pontos-atencao">
-                {relatorio.pontosAtencao.map((p: any) => (
+                {relatorio.pontosAtencao!.map((p: any) => (
                   <li key={p.id}>
                     {p.nome} <strong>{mediaFmt(p.media)}</strong>
                   </li>
@@ -1284,11 +1284,11 @@ function RelatorioAnual({ cadastros, avaliacoes }: any) {
           </div>
 
           <h3 className="card-title" style={{ marginTop: 20 }}>Observações registradas durante o ano</h3>
-          {relatorio.observacoes.length === 0 ? (
+          {relatorio.observacoes!.length === 0 ? (
             <p className="field-hint">Nenhuma observação registrada neste ano.</p>
           ) : (
             <div className="observacoes-lista">
-              {relatorio.observacoes.map((o: any, i: number) => (
+              {relatorio.observacoes!.map((o: any, i: number) => (
                 <div key={i} className="observacao-item">
                   <span>{formatDateBR(o.data)}</span>
                   <p>{o.texto}</p>
@@ -1326,7 +1326,7 @@ function Comparar({ cadastros, avaliacoes }: any) {
     for (let i = 0; i < maxLen; i++) {
       const row: any = { avaliacao: `${i + 1}ª` };
       dados.forEach((d) => {
-        if (d.stats.lista[i]) row[d.prof.nome] = d.stats.lista[i].c.media;
+        if (d.prof && d.stats.lista[i]) row[d.prof.nome] = d.stats.lista[i].c.media;
       });
       rows.push(row);
     }
@@ -1360,8 +1360,8 @@ function Comparar({ cadastros, avaliacoes }: any) {
                 <tr>
                   <th>Indicador</th>
                   {dados.map((d, i) => (
-                    <th key={d.prof.id} style={{ color: CORES[i] }}>
-                      {d.prof.nome}
+                    <th key={d.prof?.id || i} style={{ color: CORES[i] }}>
+                      {d.prof?.nome || "—"}
                     </th>
                   ))}
                 </tr>
@@ -1369,22 +1369,22 @@ function Comparar({ cadastros, avaliacoes }: any) {
               <tbody>
                 <tr>
                   <td><strong>Média geral</strong></td>
-                  {dados.map((d) => (
-                    <td key={d.prof.id}>{mediaFmt(d.stats.mediaGeral)}</td>
+                  {dados.map((d, i) => (
+                    <td key={d.prof?.id || i}>{mediaFmt(d.stats.mediaGeral)}</td>
                   ))}
                 </tr>
                 {AREAS.map((a) => (
                   <tr key={a.id}>
                     <td>{a.nome}</td>
-                    {dados.map((d) => (
-                      <td key={d.prof.id}>{mediaFmt(d.stats.areaMedia[a.id])}</td>
+                    {dados.map((d, i) => (
+                      <td key={d.prof?.id || i}>{mediaFmt(d.stats.areaMedia[a.id])}</td>
                     ))}
                   </tr>
                 ))}
                 <tr>
                   <td><strong>Classificação</strong></td>
-                  {dados.map((d) => (
-                    <td key={d.prof.id}>
+                  {dados.map((d, i) => (
+                    <td key={d.prof?.id || i}>
                       <Badge classificacao={d.stats.classificacao} size="sm" />
                     </td>
                   ))}
@@ -1404,7 +1404,7 @@ function Comparar({ cadastros, avaliacoes }: any) {
                   <Tooltip formatter={(v: any) => mediaFmt(v)} />
                   <Legend />
                   {dados.map((d, i) => (
-                    <Line key={d.prof.id} type="monotone" dataKey={d.prof.nome} stroke={CORES[i]} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+                    d.prof && <Line key={d.prof.id} type="monotone" dataKey={d.prof.nome} stroke={CORES[i]} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
                   ))}
                 </LineChart>
               </ResponsiveContainer>
